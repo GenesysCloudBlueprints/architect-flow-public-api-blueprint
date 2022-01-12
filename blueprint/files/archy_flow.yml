@@ -1,0 +1,250 @@
+inboundCall:
+  name: Queue Members Check
+  description: Inbound flow that checks the number of members in a queue using a data action.
+  division: Home
+  startUpRef: "/inboundCall/menus/menu[Main Menu_10]"
+  defaultLanguage: en-us
+  supportedLanguages:
+    en-us:
+      defaultLanguageSkill:
+        noValue: true
+      textToSpeech:
+        defaultEngine:
+          voice: Jill
+  initialGreeting:
+    tts: Hello, this is the initial greeting.
+  settingsActionDefaults:
+    playAudioOnSilence:
+      timeout:
+        lit:
+          seconds: 40
+    detectSilence:
+      timeout:
+        lit:
+          seconds: 40
+    callData:
+      processingPrompt:
+        noValue: true
+    callBridge:
+      processingPrompt:
+        noValue: true
+    collectInput:
+      noEntryTimeout:
+        lit:
+          seconds: 5
+    dialByExtension:
+      interDigitTimeout:
+        lit:
+          seconds: 6
+    transferToUser:
+      connectTimeout:
+        noValue: true
+    transferToNumber:
+      connectTimeout:
+        noValue: true
+    transferToGroup:
+      connectTimeout:
+        noValue: true
+    transferToFlowSecure:
+      connectTimeout:
+        lit:
+          seconds: 15
+  settingsErrorHandling:
+    errorHandling:
+      disconnect:
+        none: true
+    preHandlingAudio:
+      tts: Sorry, an error occurred. Please try your call again.
+  settingsMenu:
+    extensionDialingMaxDelay:
+      lit:
+        seconds: 1
+    listenForExtensionDialing:
+      lit: true
+    menuSelectionTimeout:
+      lit:
+        seconds: 10
+    repeatCount:
+      lit: 3
+  settingsPrompts:
+    ensureAudioInPrompts: false
+  settingsSpeechRec:
+    completeMatchTimeout:
+      lit:
+        ms: 100
+    incompleteMatchTimeout:
+      lit:
+        ms: 1500
+    maxSpeechLengthTimeout:
+      lit:
+        seconds: 20
+    minConfidenceLevel:
+      lit: 50
+    asrCompanyDir: none
+    asrEnabledOnFlow: true
+  menus:
+    - menu:
+        name: Main Menu
+        refId: Main Menu_10
+        audio:
+          tts: Press 1 to connect to an agent. Press 2 to disconnect.
+        settingsMenu:
+          extensionDialingMaxDelay:
+            noValue: true
+          listenForExtensionDialing:
+            noValue: true
+          menuSelectionTimeout:
+            noValue: true
+          repeatCount:
+            noValue: true
+        settingsSpeechRec:
+          completeMatchTimeout:
+            noValue: true
+          incompleteMatchTimeout:
+            noValue: true
+          maxSpeechLengthTimeout:
+            noValue: true
+          minConfidenceLevel:
+            noValue: true
+        choices:
+          - menuDisconnect:
+              name: Disconnect
+              dtmf: digit_2
+              globalDtmf: false
+              globalSpeechRecTerms: false
+          - menuJumpToTask:
+              name: Check the queue
+              dtmf: digit_1
+              globalDtmf: false
+              globalSpeechRecTerms: false
+              targetTaskRef: "/inboundCall/tasks/task[Checking the queues_13]"
+  tasks:
+    - task:
+        name: Checking the queues
+        refId: Checking the queues_13
+        variables:
+          - queueVariable:
+              name: Task.PrimaryQueue
+              initialValue:
+                noValue: true
+          - integerVariable:
+              name: Task.total_agents_on_queue
+              initialValue:
+                noValue: true
+              isOutput: true
+        actions:
+          - findQueue:
+              name: Find Queue
+              findName:
+                lit: Primary Queue Example
+              findResult:
+                var: Task.PrimaryQueue
+              outputs:
+                found:
+                  actions:
+                    - callData:
+                        name: Check Queue For Members
+                        processingPrompt:
+                          noValue: true
+                        timeout:
+                          lit:
+                            minutes: 1
+                        category:
+                          Genesys Cloud Data Actions:
+                            dataAction:
+                              Agents Logged Into Queue:
+                                inputs:
+                                  QueueID:
+                                    exp: Task.PrimaryQueue.id
+                                successOutputs:
+                                  total_agents_on_queue:
+                                    var: Task.total_agents_on_queue
+                        outputs:
+                          success:
+                            actions:
+                              - decision:
+                                  name: Decision
+                                  condition:
+                                    exp: Task.total_agents_on_queue > 0
+                                  outputs:
+                                    yes:
+                                      actions:
+                                        - transferToAcd:
+                                            name: Transfer to ACD
+                                            targetQueue:
+                                              exp: Task.PrimaryQueue
+                                            preTransferAudio:
+                                              tts: You are going to the main queue.
+                                            failureTransferAudio:
+                                              tts: Failed to transfer you to the main queue.
+                                            priority:
+                                              lit: 0
+                                            preferredAgents:
+                                              noValue: true
+                                            languageSkill:
+                                              noValue: true
+                                            failureOutputs:
+                                              errorType:
+                                                noValue: true
+                                              errorMessage:
+                                                noValue: true
+                                            outputs:
+                                              failure:
+                                                actions:
+                                                  - playAudio:
+                                                      name: Play Audio
+                                                      audio:
+                                                        tts: Failed to secure an agent in the main queue.
+                                    no:
+                                      actions:
+                                        - transferToAcd:
+                                            name: Transfer to ACD
+                                            targetQueue:
+                                              lit:
+                                                name: Secondary Queue Example
+                                            preTransferAudio:
+                                              tts: You are going to the secondary queue.
+                                            failureTransferAudio:
+                                              tts: Failed to transfer you to the secondary queue.
+                                            priority:
+                                              lit: 0
+                                            preferredAgents:
+                                              noValue: true
+                                            languageSkill:
+                                              noValue: true
+                                            failureOutputs:
+                                              errorType:
+                                                noValue: true
+                                              errorMessage:
+                                                noValue: true
+                                            outputs:
+                                              failure:
+                                                actions:
+                                                  - playAudio:
+                                                      name: Play Audio
+                                                      audio:
+                                                        tts: Failed to secure an agent in the secondary queue.
+                          failure:
+                            actions:
+                              - playAudio:
+                                  name: Failed data action
+                                  audio:
+                                    tts: Data Action failed.
+                          timeout:
+                            actions:
+                              - playAudio:
+                                  name: Time out
+                                  audio:
+                                    tts: Data Action timed out.
+                notFound:
+                  actions:
+                    - playAudio:
+                        name: Play Audio
+                        audio:
+                          tts: Failed to locate queue within your organisation.
+          - playAudio:
+              name: Play Audio
+              audio:
+                tts: Disconnecting
+          - disconnect:
+              name: Disconnect
