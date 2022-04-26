@@ -9,7 +9,7 @@ summary: |
   This Genesys Cloud Developer Blueprint provides an example of how to integrate a public API call into an Architect flow to check if any agents are available on a given queue and make routing decisions based on the outcome. 
 --- 
 
-This Genesys Cloud Developer Blueprint provides an example of how to integrate a public API call into an Architect flow to check if any agents are available on a given queue and make routing decisions based on the outcome.
+This Genesys Cloud Developer Blueprint provides an example of how to configure a data action to invoke a public API call. The data action will be invoked from within an Architect flow to determine if any agents are available on a given queue and make routing decisions based on the outcome. All of this Genesys Cloud infrastructure will be deployed using Terraform and CX as Code.
 
 ## Scenario 
 
